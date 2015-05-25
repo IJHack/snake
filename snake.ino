@@ -6,6 +6,8 @@
 //
 #include "LedControl.h"
 
+static const bool wrap = false;
+
 /* using VCC, GND, DIN 20, CS 21, CLK 5 for the MAX7219 */
 static const int DATA_PIN = 20;
 static const int CLK_PIN  = 5;
@@ -16,6 +18,8 @@ LedControl lc=LedControl(DATA_PIN, CLK_PIN, CS_PIN, 1);
 // Button pin
 const int buttonRightPin = 9;
 const int buttonLeftPin  = 10;
+
+static const int SOUND_PIN = 8; // piezo element for sound effects
 
 // Game constants
 // buttons
@@ -41,7 +45,9 @@ unsigned long delayTime = 500;                     // Game step in ms
 int fruitX, fruitY;
 unsigned long fruitPrevTime = 0;
 unsigned long fruitBlinkTime = 1000/250;
-int fruitLed = true;
+bool fruitLed = true;
+bool playing = false;
+bool recording_play=false;
 
 void setup(){
   Serial.begin(9600);
@@ -57,7 +63,7 @@ void setup(){
   initButtons(buttonpins, 2);
   // init snake
   snakeX[0] = 4;
-  snakeY[0] = 7;
+  snakeY[0] = 4;
   for(int i=1; i<MAX_SNAKE_LENGTH; i++){
     snakeX[i] = snakeY[i] = -1;
   }
@@ -67,10 +73,18 @@ void setup(){
 void loop(){
   checkButtons();
   unsigned long currentTime = millis();
-  if(currentTime - prevTime >= delayTime){
-    nextstep(); 
-    buttonRead = false;
-    prevTime = currentTime;
+  if(currentTime - prevTime >= delayTime){    
+    if (playing) {
+        nextstep(); 
+        buttonRead = false;
+        prevTime = currentTime;
+    } else {
+      checkButtons();
+      if (buttonRead) {
+         buttonRead = false;
+         playing = true;
+      }
+    }
   }
   draw();
 }
@@ -126,26 +140,14 @@ void nextstep(){
   for(int i=snakeLength-1; i>0; i--){
     snakeX[i] = snakeX[i-1];
     snakeY[i] = snakeY[i-1];
-    // self colision check
-    //
   }
-  switch(direction){
-    case TOP:
-      snakeY[0] = snakeY[0]-1;
-      break;
-    case RIGHT:
-      snakeX[0] = snakeX[0]+1;
-      break;
-    case BOTTOM:
-      snakeY[0] = snakeY[0]+1;
-      break;
-    case LEFT:
-      snakeX[0]=snakeX[0]-1;
-      break;
+  if (!moveIt()) {
+    died();
   }
   if((snakeX[0] == fruitX) && (snakeY[0] == fruitY)){
     snakeLength++;
-    if(snakeLength < MAX_SNAKE_LENGTH){      
+    if(snakeLength < MAX_SNAKE_LENGTH){  
+      sound(1000, 100);    
       makeFruit();
     } 
     else {
@@ -153,16 +155,32 @@ void nextstep(){
     }
   }
   if (snakeX[0] < 0) {
-    snakeX[0] = 7;
+    if (wrap) {
+      snakeX[0] = 7;
+    } else {
+      died();
+    }
   }
   if (snakeY[0] < 0) {
-    snakeY[0] = 7;
+    if (wrap) {
+      snakeY[0] = 7;
+    } else {
+      died();
+    }
   }
   if (snakeX[0] > 7) {
-    snakeX[0] = 0;
+    if (wrap) {
+      snakeX[0] = 0;
+    } else {
+      died();
+    }
   }
   if (snakeY[0] > 7) {
-    snakeY[0] = 0;
+    if (wrap) {
+      snakeY[0] = 0;
+    } else {
+      died();
+    }
   }
   
 }
@@ -186,4 +204,55 @@ boolean isPartOfSnake(int x, int y){
     }
   }
   return false;
+}
+
+void sound(int freq, int duration)
+{
+  if (!recording_play)
+    tone(SOUND_PIN, freq, duration);
+}
+
+bool moveIt() {
+  switch(direction){
+    case TOP:
+      if (isPartOfSnake(snakeX[0], snakeY[0]-1)) {
+        return false; 
+      }
+      snakeY[0] = snakeY[0]-1;
+      break;
+    case RIGHT:
+      if (isPartOfSnake(snakeX[0]+1, snakeY[0])) {
+        return false; 
+      }
+      snakeX[0] = snakeX[0]+1;
+      break;
+    case BOTTOM:
+      if (isPartOfSnake(snakeX[0], snakeY[0]+1)) {
+        return false; 
+      }
+      snakeY[0] = snakeY[0]+1;
+      break;
+    case LEFT:
+      if (isPartOfSnake(snakeX[0]-1, snakeY[0])) {
+        return false; 
+      }
+      snakeX[0]=snakeX[0]-1;
+      break;
+  }
+  return true;
+}
+
+void died() {
+  for (int i=0; i<10; i++) 
+  {
+    sound( 2000- (i*200), 200);
+    delay(100);
+  }
+  snakeLength = 1;  
+  snakeX[0] = 4;
+  snakeY[0] = 4;
+  for(int i=1; i<MAX_SNAKE_LENGTH; i++){
+    snakeX[i] = snakeY[i] = -1;
+  }
+  playing = false;
 }
