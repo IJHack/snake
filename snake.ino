@@ -12,8 +12,8 @@ static const int CS_PIN   = 21;
 LedControl lc=LedControl(DATA_PIN, CLK_PIN, CS_PIN, 1);
 
 // Button pin
-const int buttonRightPin = 2;
-const int buttonLeftPin  = 3;
+const int buttonRightPin = 9;
+const int buttonLeftPin  = 10;
 
 // Game constants
 // buttons
@@ -148,6 +148,19 @@ void nextstep(){
       fruitX = fruitY = -1;
     }
   }
+  if (snakeX[0] < 0) {
+    snakeX[0] = 7;
+  }
+  if (snakeY[0] < 0) {
+    snakeY[0] = 7;
+  }
+  if (snakeX[0] > 7) {
+    snakeX[0] = 0;
+  }
+  if (snakeY[0] > 7) {
+    snakeY[0] = 0;
+  }
+  
 }
 
 void makeFruit(){
