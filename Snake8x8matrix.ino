@@ -1,9 +1,15 @@
 // Snake on 8x8Matrix 
 // 2013-06-15 JorgVisch
 // 
-#include <Wire.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_LEDBackpack.h>
+#include "LedControl.h"
+
+/* using VCC, GND, DIN 20, CS 21, CLK 5 for the MAX7219 */
+static const int DATA_PIN = 20;
+static const int CLK_PIN  = 5;
+static const int CS_PIN   = 21;
+
+LedControl lc=LedControl(DATA_PIN, CLK_PIN, CS_PIN, 1);
 
 // Button pin
 const int buttonRightPin = 2;
@@ -22,7 +28,6 @@ const int LEFT   = 3;
 const int MAX_SNAKE_LENGTH = 10;
 
 // Variables
-Adafruit_8x8matrix matrix = Adafruit_8x8matrix();  // Display
 int direction = TOP;                               // direction of movement
 int snakeX[MAX_SNAKE_LENGTH];                      // X-coordinates of snake
 int snakeY[MAX_SNAKE_LENGTH];                      // Y-coordinates of snake
@@ -34,15 +39,18 @@ unsigned long delayTime = 500;                     // Game step in ms
 int fruitX, fruitY;
 unsigned long fruitPrevTime = 0;
 unsigned long fruitBlinkTime = 1000/250;
-int fruitLed = LED_ON;
+int fruitLed = true;
 
 void setup(){
   Serial.begin(9600);
   Serial.println("Snake is started");
   randomSeed(analogRead(0));
   // Init led matrix
-  matrix.begin(0x70);
-  // init buttons
+  lc.shutdown(0,false);
+  /* Set the brightness to a medium values */
+  lc.setIntensity(0,15);
+  /* and clear the display */
+  lc.clearDisplay(0);  // init buttons
   int buttonpins[] = {buttonRightPin, buttonLeftPin};
   initButtons(buttonpins, 2);
   // init snake
@@ -85,15 +93,15 @@ void checkButtons(){
 }
 
 void draw(){
-  matrix.clear();
+  lc.clearDisplay(0);
   drawSnake();
   drawFruit();
-  matrix.writeDisplay();
+  //matrix.writeDisplay();
 }
 
 void drawSnake(){
   for(int i=0; i<snakeLength; i++){
-    matrix.drawPixel(snakeX[i], snakeY[i], LED_ON);
+    lc.setLed(0, snakeX[i], snakeY[i], true);
   }
 }
 
@@ -101,10 +109,10 @@ void drawFruit(){
   if(inPlayField(fruitX, fruitY)){
     unsigned long currenttime = millis();
     if(currenttime - fruitPrevTime >= fruitBlinkTime){
-      fruitLed = (fruitLed == LED_ON) ? LED_OFF : LED_ON;
+      fruitLed = fruitLed ? false : true;
       fruitPrevTime = currenttime;
     }
-    matrix.drawPixel(fruitX, fruitY, fruitLed);
+    lc.setLed(0, fruitX, fruitY, fruitLed);
   }
 }
 
