@@ -1,7 +1,9 @@
 // Snake on 8x8Matrix 
 // 2013-06-15 JorgVisch
 // 
-#include <Adafruit_GFX.h>
+// IJduino port 
+// 2015-05-25 AnneJan
+//
 #include "LedControl.h"
 
 /* using VCC, GND, DIN 20, CS 21, CLK 5 for the MAX7219 */
@@ -25,7 +27,7 @@ const int RIGHT  = 1;
 const int BOTTOM = 2;
 const int LEFT   = 3;
 // Snake
-const int MAX_SNAKE_LENGTH = 10;
+const int MAX_SNAKE_LENGTH = 64;
 
 // Variables
 int direction = TOP;                               // direction of movement
@@ -124,6 +126,8 @@ void nextstep(){
   for(int i=snakeLength-1; i>0; i--){
     snakeX[i] = snakeX[i-1];
     snakeY[i] = snakeY[i-1];
+    // self colision check
+    //
   }
   switch(direction){
     case TOP:
