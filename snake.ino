@@ -5,6 +5,7 @@
 // 2015-05-25 AnneJan
 //
 #include "LedControl.h"
+#include "scroller.h"
 
 static const bool wrap = false;
 
@@ -48,6 +49,7 @@ unsigned long fruitBlinkTime = 1000/250;
 bool fruitLed = true;
 bool playing = false;
 bool recording_play=false;
+char msg[100]; //global message buffer for textscroller
 
 void setup(){
   Serial.begin(9600);
@@ -79,8 +81,8 @@ void loop(){
         buttonRead = false;
         prevTime = currentTime;
     } else {
-      checkButtons();
-      if (buttonRead) {
+      if (!scroller(lc, "    pIJthon   ", 50, buttonRightPin, buttonLeftPin))
+      {
          buttonRead = false;
          playing = true;
       }
@@ -109,10 +111,12 @@ void checkButtons(){
 }
 
 void draw(){
-  lc.clearDisplay(0);
-  drawSnake();
-  drawFruit();
-  //matrix.writeDisplay();
+  if (playing) 
+  {
+    lc.clearDisplay(0);
+    drawSnake();
+    drawFruit();
+  }
 }
 
 void drawSnake(){
@@ -254,5 +258,6 @@ void died() {
   for(int i=1; i<MAX_SNAKE_LENGTH; i++){
     snakeX[i] = snakeY[i] = -1;
   }
+  makeFruit();
   playing = false;
 }
